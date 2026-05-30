@@ -88,7 +88,13 @@ Variabel konfigurasi di `.env`:
 | `MCP_SERVER_NAME` | — | `budget-sekolah-mcp` | Nama server yang ditampilkan ke AI client |
 | `MCP_LOG_LEVEL` | — | `INFO` | Level logging (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 | `HTTP_TIMEOUT` | — | `30.0` | Timeout HTTP request (detik) |
-| `MCP_API_KEY` | — | *(kosong)* | API key untuk mengamankan endpoint SSE di cloud. Kosongkan untuk menonaktifkan. |
+| `MCP_BASE_URL` | — | *(kosong)* | URL publik MCP server. Wajib diisi jika OAuth Authentik aktif. Contoh: `https://mcp.budget-26.cantum-ypii.com` |
+| `AUTHENTIK_BASE_URL` | — | *(kosong)* | URL dasar Authentik. Contoh: `https://auth.cantum-ypii.com` |
+| `AUTHENTIK_APP_SLUG` | — | *(kosong)* | Slug OAuth2 Provider di Authentik. Contoh: `budget-mcp` |
+| `AUTHENTIK_CLIENT_ID` | — | *(kosong)* | Client ID dari Authentik OAuth2 Provider |
+| `AUTHENTIK_CLIENT_SECRET` | — | *(kosong)* | Client Secret dari Authentik OAuth2 Provider |
+| `AUTHENTIK_ALLOWED_USERNAMES` | — | *(kosong)* | `preferred_username` Authentik yang diizinkan, dipisah koma. Kosong = semua user diizinkan. |
+| `MCP_API_KEY` | — | *(kosong)* | API key statis untuk VS Code / tools non-OAuth. Kosongkan untuk menonaktifkan. |
 
 ---
 
@@ -203,9 +209,78 @@ Tambahkan ke `.vscode/mcp.json` atau konfigurasi workspace:
 
 ## Keamanan
 
-### Autentikasi API Key (SSE/HTTP)
+Server mendukung dua mekanisme autentikasi yang bisa aktif bersamaan:
 
-Saat di-deploy via HTTP/SSE, lindungi server dengan `MCP_API_KEY`. Setiap request harus menyertakan salah satu header:
+| Mekanisme | Digunakan oleh | Aktif jika |
+|-----------|---------------|------------|
+| **OAuth via Authentik** | Claude.ai, AI client berbasis browser | `AUTHENTIK_*` + `MCP_BASE_URL` dikonfigurasi |
+| **API Key statis** | VS Code Copilot, tools CLI, integrasi otomatis | `MCP_API_KEY` dikonfigurasi |
+
+### Autentikasi OAuth via Authentik (untuk Claude.ai)
+
+Authentik digunakan sebagai identity provider (IdP). Pengguna login via Authentik; MCP server memverifikasi token menggunakan JWKS endpoint Authentik.
+
+#### Langkah 1 — Buat OAuth2/OIDC Provider di Authentik
+
+1. Login ke Authentik Admin (contoh: `https://auth.cantum-ypii.com`)
+2. Buka **Providers → Create** → pilih **OAuth2/OpenID Connect Provider**
+3. Isi konfigurasi:
+   - **Name**: `budget-mcp`
+   - **Client type**: `Confidential`
+   - **Redirect URIs**: `https://<MCP_BASE_URL>/auth/callback`
+     (contoh: `https://mcp.budget-26.cantum-ypii.com/auth/callback`)
+   - **Scopes**: centang `openid`, `profile`, `email`
+4. Catat **Client ID** dan **Client Secret** yang ter-generate
+5. Buka **Applications → Create**
+   - **Slug**: `budget-mcp`
+   - **Provider**: pilih provider yang baru dibuat
+
+#### Langkah 2 — Konfigurasi Environment Variables
+
+Tambahkan ke `.env` (atau Docker environment):
+
+```env
+MCP_BASE_URL=https://mcp.budget-26.cantum-ypii.com
+AUTHENTIK_BASE_URL=https://auth.cantum-ypii.com
+AUTHENTIK_APP_SLUG=budget-mcp
+AUTHENTIK_CLIENT_ID=<Client ID dari Authentik>
+AUTHENTIK_CLIENT_SECRET=<Client Secret dari Authentik>
+AUTHENTIK_ALLOWED_USERNAMES=andhit-r
+```
+
+> `AUTHENTIK_ALLOWED_USERNAMES` berisi daftar `preferred_username` Authentik yang diizinkan, dipisah koma. Kosongkan untuk mengizinkan semua user yang berhasil login ke Authentik.
+
+#### Langkah 3 — Tambahkan ke Docker Compose
+
+```yaml
+services:
+  budget-mcp:
+    image: ghcr.io/cakrawala-tumbuh/budget-sekolah-mcp:latest
+    environment:
+      BUDGET_API_BASE_URL: http://budget-api:8000
+      BUDGET_API_USERNAME: admin
+      BUDGET_API_PASSWORD: ${ADMIN_PASSWORD}
+      MCP_BASE_URL: ${MCP_BASE_URL}
+      AUTHENTIK_BASE_URL: ${AUTHENTIK_BASE_URL}
+      AUTHENTIK_APP_SLUG: ${AUTHENTIK_APP_SLUG}
+      AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID}
+      AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET}
+      AUTHENTIK_ALLOWED_USERNAMES: ${AUTHENTIK_ALLOWED_USERNAMES}
+      MCP_API_KEY: ${MCP_API_KEY}
+```
+
+#### Langkah 4 — Redeploy
+
+```bash
+docker compose pull budget-mcp
+docker compose up -d budget-mcp
+```
+
+---
+
+### Autentikasi API Key (untuk VS Code / tools non-OAuth)
+
+Lindungi endpoint SSE dengan `MCP_API_KEY`. Setiap request harus menyertakan salah satu header:
 
 ```
 X-API-Key: <kunci-anda>
@@ -218,7 +293,7 @@ Generate kunci yang kuat:
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-> **Catatan:** Mode stdio tidak memerlukan API key — keamanannya dijamin oleh isolasi proses AI client yang me-spawn server.
+> **Catatan:** Mode stdio tidak memerlukan autentikasi — keamanannya dijamin oleh isolasi proses AI client yang me-spawn server.
 
 ---
 
