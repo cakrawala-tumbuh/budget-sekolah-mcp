@@ -6,18 +6,23 @@ Instansiasi Settings dilakukan sekali di modul ini dan diimpor
 dari tempat lain (singleton pattern).
 
 Variabel wajib:
-  BUDGET_API_BASE_URL  — URL backend yang dituju
-  BUDGET_API_USERNAME  — username login ke backend
-  BUDGET_API_PASSWORD  — password login ke backend
+  BUDGET_API_BASE_URL        — URL backend yang dituju
+  BUDGET_API_USERNAME        — username login ke backend
+  BUDGET_API_PASSWORD        — password login ke backend
 
-Variabel opsional:
-  MCP_BASE_URL         — URL publik MCP server (mis. https://mcp.budget-26.cantum-ypii.com).
-                         Jika diisi, server mengaktifkan OAuth 2.0 bawaan FastMCP.
-                         Wajib diisi untuk deployment cloud agar Claude.ai dapat terhubung.
-  MCP_API_KEY          — (Legacy) API key statis untuk mengamankan MCP server.
-                         Hanya aktif jika MCP_BASE_URL tidak diisi.
-                         Jika diisi, setiap request HTTP/SSE wajib menyertakan
-                         header 'X-API-Key: <key>' atau 'Authorization: Bearer <key>'.
+Variabel opsional (OAuth via GitHub — untuk Claude.ai):
+  MCP_BASE_URL               — URL publik MCP server.
+                               Wajib diisi agar OAuth berfungsi.
+                               Contoh: https://mcp.budget-26.cantum-ypii.com
+  GITHUB_CLIENT_ID           — Client ID dari GitHub OAuth App.
+  GITHUB_CLIENT_SECRET       — Client Secret dari GitHub OAuth App.
+  GITHUB_ALLOWED_USERNAMES   — Username GitHub yang diizinkan, dipisah koma.
+                               Contoh: "andhit-r" atau "andhit-r,user2".
+                               Kosong = semua GitHub user diizinkan.
+
+Variabel opsional (API Key — untuk VS Code / tools lain):
+  MCP_API_KEY                — API key statis. Request wajib menyertakan
+                               header 'Authorization: Bearer <key>'.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,13 +41,19 @@ class Settings(BaseSettings):
         mcp_server_name: Nama server MCP yang ditampilkan ke AI client.
         mcp_log_level: Level logging (DEBUG, INFO, WARNING, ERROR).
         http_timeout: Timeout HTTP request dalam detik.
-        mcp_base_url: URL publik MCP server untuk OAuth 2.0. Jika diisi,
-            FastMCP mengaktifkan OAuth authorization server bawaan sehingga
-            Claude.ai dan MCP client lain dapat terhubung via OAuth.
+        mcp_base_url: URL publik MCP server. Wajib diisi jika OAuth aktif.
             Contoh: ``https://mcp.budget-26.cantum-ypii.com``.
-        mcp_api_key: (Legacy) API key statis. Hanya aktif jika ``mcp_base_url``
-            tidak dikonfigurasi. Setiap request wajib menyertakan header
-            ``X-API-Key`` atau ``Authorization: Bearer``.
+        github_client_id: Client ID dari GitHub OAuth App.
+            Jika diisi bersama ``github_client_secret`` dan ``mcp_base_url``,
+            server mengaktifkan OAuth via GitHub sebagai identity provider.
+        github_client_secret: Client Secret dari GitHub OAuth App.
+        github_allowed_usernames: Daftar GitHub username yang diizinkan,
+            dipisah koma. Contoh: ``"andhit-r"`` atau ``"andhit-r,user2"``.
+            Kosong = semua GitHub user diizinkan (tidak disarankan untuk
+            deployment publik).
+        mcp_api_key: API key statis untuk akses dari VS Code dan tools lain
+            yang tidak mendukung OAuth. Request wajib menyertakan header
+            ``Authorization: Bearer <key>``.
     """
 
     budget_api_base_url: str
@@ -53,6 +64,9 @@ class Settings(BaseSettings):
     mcp_log_level: str = "INFO"
     http_timeout: float = 30.0
     mcp_base_url: str | None = None
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    github_allowed_usernames: list[str] = []
     mcp_api_key: str | None = None
 
     model_config = SettingsConfigDict(

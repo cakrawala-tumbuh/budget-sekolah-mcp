@@ -1,123 +1,284 @@
 """
-Unit test untuk mekanisme pemilihan autentikasi server.
+Unit test untuk mekanisme autentikasi server.
 
-Menguji bahwa OAuthProvider dapat diinstansiasi dan konfigurasi auth dipilih
-dengan benar berdasarkan MCP_BASE_URL dan MCP_API_KEY:
+Menguji komponen-komponen auth yang baru:
 
-  - OAuthProvider dapat diinstansiasi dengan base_url yang valid
-  - OAuthProvider memiliki client_registration_options.enabled = True
-  - ApiKeyMiddleware digunakan ketika hanya MCP_API_KEY yang dikonfigurasi
-  - Tanpa konfigurasi auth → app tidak dibungkus ApiKeyMiddleware
-  - Environment test (tanpa MCP_BASE_URL) → _auth adalah None
+  - GithubUsernameFilteredProvider: filter username GitHub
+  - BearerApiKeyVerifier: validasi static API key
+  - Logika pemilihan auth di server.py berdasarkan konfigurasi
+  - asgi.py menghasilkan ASGI app yang benar
+
+Catatan: Test ini tidak membutuhkan koneksi GitHub nyata —
+semua HTTP call ke GitHub API di-mock via respx.
 """
 
 import pytest
 
+from budget_sekolah_mcp.auth_provider import BearerApiKeyVerifier
 from budget_sekolah_mcp.middleware import ApiKeyMiddleware
 
 
-class TestOAuthProviderInstansiasi:
-    """Test instansiasi dan konfigurasi OAuthProvider."""
+class TestBearerApiKeyVerifier:
+    """Test BearerApiKeyVerifier — validasi static API key."""
 
-    def test_oauth_provider_dapat_diinstansiasi_dengan_base_url(self):
-        """OAuthProvider harus bisa dibuat dengan base_url yang valid."""
-        from fastmcp.server.auth.auth import ClientRegistrationOptions, OAuthProvider
+    def test_inisialisasi_dengan_api_key_valid(self):
+        """BearerApiKeyVerifier harus bisa dibuat dengan API key yang valid."""
+        verifier = BearerApiKeyVerifier(api_key="secret-key-123")
+        assert verifier is not None
 
-        provider = OAuthProvider(
-            base_url="https://mcp.budget-26.cantum-ypii.com",
-            client_registration_options=ClientRegistrationOptions(enabled=True),
-        )
+    def test_inisialisasi_dengan_api_key_kosong_raise_valueerror(self):
+        """BearerApiKeyVerifier harus raise ValueError jika api_key kosong."""
+        with pytest.raises(ValueError, match="api_key"):
+            BearerApiKeyVerifier(api_key="")
 
-        assert provider is not None
-
-    def test_oauth_provider_memiliki_client_registration_enabled(self):
-        """OAuthProvider harus mengaktifkan dynamic client registration."""
-        from fastmcp.server.auth.auth import ClientRegistrationOptions, OAuthProvider
-
-        provider = OAuthProvider(
-            base_url="https://mcp.budget-26.cantum-ypii.com",
-            client_registration_options=ClientRegistrationOptions(enabled=True),
-        )
-
-        assert provider.client_registration_options is not None
-        assert provider.client_registration_options.enabled is True
-
-    def test_oauth_provider_base_url_tersimpan_dengan_benar(self):
-        """OAuthProvider harus menyimpan base_url dengan benar."""
-        from fastmcp.server.auth.auth import OAuthProvider
-
-        base_url = "https://mcp.budget-26.cantum-ypii.com"
-        provider = OAuthProvider(base_url=base_url)
-
-        assert str(provider.base_url).rstrip("/") == base_url.rstrip("/")
-
-    def test_auth_none_di_lingkungan_test(self):
-        """Di lingkungan test (tanpa MCP_BASE_URL), _auth harus None."""
-        import budget_sekolah_mcp.server as server_mod
-
-        # Test environment tidak mempunyai MCP_BASE_URL
-        assert server_mod._auth is None
-
-
-class TestAsgiAuthMode:
-    """Test logika pemilihan mode auth di asgi.py melalui ApiKeyMiddleware langsung."""
-
-    def test_api_key_middleware_membungkus_app_saat_aktif(self):
-        """ApiKeyMiddleware harus membungkus app jika api_key diberikan."""
-        inner_app = object()
-        middleware = ApiKeyMiddleware(inner_app, api_key="test-key")
-
-        assert isinstance(middleware, ApiKeyMiddleware)
-        assert middleware.app is inner_app
-        assert middleware.api_key == "test-key"
+    def test_inisialisasi_dengan_whitespace_raise_valueerror(self):
+        """BearerApiKeyVerifier harus raise ValueError jika api_key hanya spasi."""
+        with pytest.raises(ValueError, match="api_key"):
+            BearerApiKeyVerifier(api_key="   ")
 
     @pytest.mark.asyncio
-    async def test_mode_legacy_menolak_request_tanpa_kunci(self):
-        """Middleware legacy harus menolak request tanpa API key."""
-        import json
+    async def test_verify_token_cocok_kembalikan_access_token(self):
+        """verify_token harus mengembalikan AccessToken jika token cocok."""
+        verifier = BearerApiKeyVerifier(api_key="my-secret-key")
+        result = await verifier.verify_token("my-secret-key")
 
-        events: list[dict] = []
+        assert result is not None
+        assert result.client_id == "api-key-client"
+        assert result.token == "my-secret-key"
 
-        async def dummy_app(scope, receive, send):
-            pass
+    @pytest.mark.asyncio
+    async def test_verify_token_salah_kembalikan_none(self):
+        """verify_token harus mengembalikan None jika token tidak cocok."""
+        verifier = BearerApiKeyVerifier(api_key="correct-key")
+        result = await verifier.verify_token("wrong-key")
 
-        async def receive():
-            return {"type": "http.request", "body": b"", "more_body": False}
+        assert result is None
 
-        async def send(event):
-            events.append(event)
+    @pytest.mark.asyncio
+    async def test_verify_token_kosong_kembalikan_none(self):
+        """verify_token harus mengembalikan None untuk token kosong."""
+        verifier = BearerApiKeyVerifier(api_key="correct-key")
+        result = await verifier.verify_token("")
 
-        middleware = ApiKeyMiddleware(dummy_app, api_key="real-secret-key")
-        scope = {
-            "type": "http",
-            "method": "GET",
-            "path": "/sse",
-            "headers": [],
-            "client": ("127.0.0.1", 1234),
-        }
-        await middleware(scope, receive, send)
+        assert result is None
 
-        start = next(e for e in events if e["type"] == "http.response.start")
-        assert start["status"] == 401
-        body_event = next(e for e in events if e["type"] == "http.response.body")
-        data = json.loads(body_event["body"])
-        assert data["error"] == "Unauthorized"
 
-    def test_mode_oauth_tidak_menggunakan_api_key_middleware(self):
-        """Ketika OAuth aktif, app tidak boleh dibungkus ApiKeyMiddleware."""
-        from fastmcp.server.auth.auth import ClientRegistrationOptions, OAuthProvider
+class TestGithubUsernameFilteredProvider:
+    """Test GithubUsernameFilteredProvider — filter login GitHub."""
 
-        # Simulasi: buat provider dan verifikasi tidak ada middleware statis
-        provider = OAuthProvider(
-            base_url="https://mcp.budget-26.cantum-ypii.com",
-            client_registration_options=ClientRegistrationOptions(enabled=True),
+    def test_inisialisasi_dengan_satu_username(self):
+        """Provider harus bisa dibuat dengan satu username yang diizinkan."""
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
         )
-        inner_app = object()
+        assert provider is not None
+        assert "andhit-r" in provider._allowed_usernames
 
-        # Saat OAuth aktif, app langsung dipakai tanpa ApiKeyMiddleware
-        app = inner_app  # tidak dibungkus
+    def test_inisialisasi_username_dinormalisasi_lowercase(self):
+        """Username harus disimpan dalam lowercase."""
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
 
-        assert not isinstance(app, ApiKeyMiddleware)
-        assert app is inner_app
-        # Verify provider exist and is the right type
-        assert isinstance(provider, OAuthProvider)
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["AndhiT-R", "UserDua"],
+        )
+        assert "andhit-r" in provider._allowed_usernames
+        assert "userdua" in provider._allowed_usernames
+        assert "AndhiT-R" not in provider._allowed_usernames
+
+    def test_inisialisasi_tanpa_whitelist_diizinkan(self):
+        """Provider harus bisa dibuat tanpa daftar username (semua diizinkan)."""
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=[],
+        )
+        assert len(provider._allowed_usernames) == 0
+
+    @pytest.mark.asyncio
+    async def test_extract_upstream_claims_username_diizinkan(self, respx_mock):
+        """_extract_upstream_claims harus mengembalikan claims jika username diizinkan."""
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        import httpx
+        respx_mock.get("https://api.github.com/user").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": 12345,
+                    "login": "andhit-r",
+                    "name": "Andhit",
+                    "email": "andhit@example.com",
+                },
+            )
+        )
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
+        )
+        claims = await provider._extract_upstream_claims(
+            {"access_token": "gho_test_token"}
+        )
+
+        assert claims is not None
+        assert claims["login"] == "andhit-r"
+        assert claims["github_id"] == 12345
+
+    @pytest.mark.asyncio
+    async def test_extract_upstream_claims_username_tidak_diizinkan(self, respx_mock):
+        """_extract_upstream_claims harus raise TokenError jika username tidak diizinkan."""
+        from mcp.server.auth.provider import TokenError
+
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        import httpx
+        respx_mock.get("https://api.github.com/user").mock(
+            return_value=httpx.Response(
+                200,
+                json={"id": 99999, "login": "orang-lain", "name": "Orang Lain"},
+            )
+        )
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
+        )
+        with pytest.raises(TokenError) as exc_info:
+            await provider._extract_upstream_claims({"access_token": "gho_test_token"})
+
+        assert exc_info.value.error == "access_denied"
+        assert "orang-lain" in exc_info.value.error_description
+
+    @pytest.mark.asyncio
+    async def test_extract_upstream_claims_tanpa_whitelist_semua_diizinkan(
+        self, respx_mock
+    ):
+        """Jika allowed_usernames kosong, semua GitHub user harus diizinkan."""
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        import httpx
+        respx_mock.get("https://api.github.com/user").mock(
+            return_value=httpx.Response(
+                200,
+                json={"id": 11111, "login": "siapapun", "name": "Siapapun"},
+            )
+        )
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=[],
+        )
+        claims = await provider._extract_upstream_claims(
+            {"access_token": "gho_test_token"}
+        )
+
+        assert claims is not None
+        assert claims["login"] == "siapapun"
+
+    @pytest.mark.asyncio
+    async def test_extract_upstream_claims_github_api_error(self, respx_mock):
+        """_extract_upstream_claims harus raise TokenError jika GitHub API error."""
+        from mcp.server.auth.provider import TokenError
+
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        import httpx
+        respx_mock.get("https://api.github.com/user").mock(
+            return_value=httpx.Response(401, json={"message": "Bad credentials"})
+        )
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
+        )
+        with pytest.raises(TokenError) as exc_info:
+            await provider._extract_upstream_claims({"access_token": "gho_invalid"})
+
+        assert exc_info.value.error == "access_denied"
+
+    @pytest.mark.asyncio
+    async def test_extract_upstream_claims_tanpa_access_token(self):
+        """_extract_upstream_claims harus raise TokenError jika access_token tidak ada."""
+        from mcp.server.auth.provider import TokenError
+
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
+        )
+        with pytest.raises(TokenError) as exc_info:
+            await provider._extract_upstream_claims({})
+
+        assert exc_info.value.error == "access_denied"
+
+
+class TestServerAuthMode:
+    """Test pemilihan auth mode di server.py berdasarkan konfigurasi."""
+
+    def test_auth_none_di_lingkungan_test(self):
+        """Di lingkungan test (tanpa GitHub env vars), _auth harus None."""
+        import budget_sekolah_mcp.server as server_mod
+
+        assert server_mod._auth is None
+
+    def test_bearer_verifier_adalah_token_verifier(self):
+        """BearerApiKeyVerifier harus merupakan subclass dari TokenVerifier."""
+        from fastmcp.server.auth import TokenVerifier
+
+        from budget_sekolah_mcp.auth_provider import BearerApiKeyVerifier
+
+        verifier = BearerApiKeyVerifier(api_key="test")
+        assert isinstance(verifier, TokenVerifier)
+
+    def test_github_provider_adalah_subclass_github_provider(self):
+        """GithubUsernameFilteredProvider harus merupakan subclass GitHubProvider."""
+        from fastmcp.server.auth.providers.github import GitHubProvider
+
+        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
+
+        provider = GithubUsernameFilteredProvider(
+            client_id="Ov23li_test",
+            client_secret="test_secret",
+            base_url="https://mcp.example.com",
+            allowed_usernames=["andhit-r"],
+        )
+        assert isinstance(provider, GitHubProvider)
+
+
+class TestAsgiApp:
+    """Test bahwa asgi.py menghasilkan ASGI app yang valid."""
+
+    def test_asgi_app_terinisialisasi(self):
+        """asgi.app harus ada dan merupakan callable ASGI."""
+        import budget_sekolah_mcp.asgi as asgi_mod
+
+        assert asgi_mod.app is not None
+        assert callable(asgi_mod.app)
+
+    def test_asgi_app_bukan_api_key_middleware(self):
+        """Dengan konfigurasi test (tanpa auth), app tidak dibungkus ApiKeyMiddleware."""
+        import budget_sekolah_mcp.asgi as asgi_mod
+
+        assert not isinstance(asgi_mod.app, ApiKeyMiddleware)
