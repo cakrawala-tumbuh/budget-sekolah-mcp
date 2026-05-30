@@ -1,0 +1,38 @@
+name: CI — Lint & Unit Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  lint-and-test:
+    name: Lint (Ruff) + Unit Test (Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff
+        run: pip install ruff>=0.4
+
+      - name: Jalankan Ruff lint
+        run: ruff check .
+
+      - name: Periksa format kode dengan Ruff
+        run: ruff format --check .
+
+      - name: Build Docker image stage test
+        run: docker build --target test -t budget-sekolah-mcp:test .
+
+      - name: Jalankan unit test di Docker
+        run: docker run --rm budget-sekolah-mcp:test
