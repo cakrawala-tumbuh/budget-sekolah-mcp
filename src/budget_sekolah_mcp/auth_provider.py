@@ -56,10 +56,15 @@ class AuthentikProvider(OAuthProxy):
     URL endpoint Authentik dibangun otomatis dari ``authentik_base_url`` dan
     ``application_slug``. Contoh untuk Authentik di
     ``https://auth.cantum-ypii.com`` dengan slug ``budget-mcp``:
-      - Authorize : ``/application/o/budget-mcp/authorize/``
-      - Token     : ``/application/o/budget-mcp/token/``
-      - JWKS      : ``/application/o/budget-mcp/jwks/``
+      - Authorize : ``/application/o/authorize/`` (generik, tanpa slug)
+      - Token     : ``/application/o/token/`` (generik, tanpa slug)
+      - JWKS      : ``/application/o/budget-mcp/jwks/`` (slug-based)
       - Userinfo  : ``/application/o/userinfo/``
+      - Issuer    : ``/application/o/budget-mcp/`` (slug-based)
+      - End-session: ``/application/o/budget-mcp/end-session/`` (slug-based)
+
+    Authentik 2024+ mengubah authorize dan token ke endpoint generik;
+    slug hanya digunakan untuk JWKS, issuer, dan end-session.
 
     Args:
         authentik_base_url: URL dasar Authentik, contoh
@@ -113,8 +118,9 @@ class AuthentikProvider(OAuthProxy):
         base = authentik_base_url.rstrip("/")
         slug = application_slug.strip("/")
 
-        authorize_url = f"{base}/application/o/{slug}/authorize/"
-        token_url = f"{base}/application/o/{slug}/token/"
+        # Authentik 2024+: authorize dan token menggunakan endpoint generik (tanpa slug)
+        authorize_url = f"{base}/application/o/authorize/"
+        token_url = f"{base}/application/o/token/"
         jwks_url = f"{base}/application/o/{slug}/jwks/"
         revoke_url = f"{base}/application/o/{slug}/end-session/"
         issuer_url = f"{base}/application/o/{slug}/"
