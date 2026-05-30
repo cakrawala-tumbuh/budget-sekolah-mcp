@@ -11,10 +11,13 @@ Variabel wajib:
   BUDGET_API_PASSWORD  — password login ke backend
 
 Variabel opsional:
-  MCP_API_KEY          — API key untuk mengamankan MCP server di cloud.
+  MCP_BASE_URL         — URL publik MCP server (mis. https://mcp.budget-26.cantum-ypii.com).
+                         Jika diisi, server mengaktifkan OAuth 2.0 bawaan FastMCP.
+                         Wajib diisi untuk deployment cloud agar Claude.ai dapat terhubung.
+  MCP_API_KEY          — (Legacy) API key statis untuk mengamankan MCP server.
+                         Hanya aktif jika MCP_BASE_URL tidak diisi.
                          Jika diisi, setiap request HTTP/SSE wajib menyertakan
                          header 'X-API-Key: <key>' atau 'Authorization: Bearer <key>'.
-                         Kosongkan untuk menonaktifkan autentikasi (lokal/stdio).
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -33,9 +36,13 @@ class Settings(BaseSettings):
         mcp_server_name: Nama server MCP yang ditampilkan ke AI client.
         mcp_log_level: Level logging (DEBUG, INFO, WARNING, ERROR).
         http_timeout: Timeout HTTP request dalam detik.
-        mcp_api_key: API key untuk mengamankan endpoint HTTP/SSE. Jika diisi,
-            setiap request wajib menyertakan header ``X-API-Key`` atau
-            ``Authorization: Bearer``. Kosongkan untuk menonaktifkan (stdio/lokal).
+        mcp_base_url: URL publik MCP server untuk OAuth 2.0. Jika diisi,
+            FastMCP mengaktifkan OAuth authorization server bawaan sehingga
+            Claude.ai dan MCP client lain dapat terhubung via OAuth.
+            Contoh: ``https://mcp.budget-26.cantum-ypii.com``.
+        mcp_api_key: (Legacy) API key statis. Hanya aktif jika ``mcp_base_url``
+            tidak dikonfigurasi. Setiap request wajib menyertakan header
+            ``X-API-Key`` atau ``Authorization: Bearer``.
     """
 
     budget_api_base_url: str
@@ -45,6 +52,7 @@ class Settings(BaseSettings):
     mcp_server_name: str = "budget-sekolah-mcp"
     mcp_log_level: str = "INFO"
     http_timeout: float = 30.0
+    mcp_base_url: str | None = None
     mcp_api_key: str | None = None
 
     model_config = SettingsConfigDict(
