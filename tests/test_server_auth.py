@@ -12,9 +12,13 @@ Catatan: Test ini tidak membutuhkan koneksi GitHub nyata —
 semua HTTP call ke GitHub API di-mock via respx.
 """
 
+import httpx
 import pytest
+from fastmcp.server.auth import TokenVerifier
+from fastmcp.server.auth.providers.github import GitHubProvider
+from mcp.server.auth.provider import TokenError
 
-from budget_sekolah_mcp.auth_provider import BearerApiKeyVerifier
+from budget_sekolah_mcp.auth_provider import BearerApiKeyVerifier, GithubUsernameFilteredProvider
 from budget_sekolah_mcp.middleware import ApiKeyMiddleware
 
 
@@ -68,8 +72,6 @@ class TestGithubUsernameFilteredProvider:
 
     def test_inisialisasi_dengan_satu_username(self):
         """Provider harus bisa dibuat dengan satu username yang diizinkan."""
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
         provider = GithubUsernameFilteredProvider(
             client_id="Ov23li_test",
             client_secret="test_secret",
@@ -81,8 +83,6 @@ class TestGithubUsernameFilteredProvider:
 
     def test_inisialisasi_username_dinormalisasi_lowercase(self):
         """Username harus disimpan dalam lowercase."""
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
         provider = GithubUsernameFilteredProvider(
             client_id="Ov23li_test",
             client_secret="test_secret",
@@ -95,8 +95,6 @@ class TestGithubUsernameFilteredProvider:
 
     def test_inisialisasi_tanpa_whitelist_diizinkan(self):
         """Provider harus bisa dibuat tanpa daftar username (semua diizinkan)."""
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
         provider = GithubUsernameFilteredProvider(
             client_id="Ov23li_test",
             client_secret="test_secret",
@@ -108,9 +106,6 @@ class TestGithubUsernameFilteredProvider:
     @pytest.mark.asyncio
     async def test_extract_upstream_claims_username_diizinkan(self, respx_mock):
         """_extract_upstream_claims harus mengembalikan claims jika username diizinkan."""
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
-        import httpx
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(
                 200,
@@ -140,11 +135,6 @@ class TestGithubUsernameFilteredProvider:
     @pytest.mark.asyncio
     async def test_extract_upstream_claims_username_tidak_diizinkan(self, respx_mock):
         """_extract_upstream_claims harus raise TokenError jika username tidak diizinkan."""
-        from mcp.server.auth.provider import TokenError
-
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
-        import httpx
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(
                 200,
@@ -169,9 +159,6 @@ class TestGithubUsernameFilteredProvider:
         self, respx_mock
     ):
         """Jika allowed_usernames kosong, semua GitHub user harus diizinkan."""
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
-        import httpx
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(
                 200,
@@ -195,11 +182,6 @@ class TestGithubUsernameFilteredProvider:
     @pytest.mark.asyncio
     async def test_extract_upstream_claims_github_api_error(self, respx_mock):
         """_extract_upstream_claims harus raise TokenError jika GitHub API error."""
-        from mcp.server.auth.provider import TokenError
-
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
-        import httpx
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(401, json={"message": "Bad credentials"})
         )
@@ -218,10 +200,6 @@ class TestGithubUsernameFilteredProvider:
     @pytest.mark.asyncio
     async def test_extract_upstream_claims_tanpa_access_token(self):
         """_extract_upstream_claims harus raise TokenError jika access_token tidak ada."""
-        from mcp.server.auth.provider import TokenError
-
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
         provider = GithubUsernameFilteredProvider(
             client_id="Ov23li_test",
             client_secret="test_secret",
@@ -245,19 +223,11 @@ class TestServerAuthMode:
 
     def test_bearer_verifier_adalah_token_verifier(self):
         """BearerApiKeyVerifier harus merupakan subclass dari TokenVerifier."""
-        from fastmcp.server.auth import TokenVerifier
-
-        from budget_sekolah_mcp.auth_provider import BearerApiKeyVerifier
-
         verifier = BearerApiKeyVerifier(api_key="test")
         assert isinstance(verifier, TokenVerifier)
 
     def test_github_provider_adalah_subclass_github_provider(self):
         """GithubUsernameFilteredProvider harus merupakan subclass GitHubProvider."""
-        from fastmcp.server.auth.providers.github import GitHubProvider
-
-        from budget_sekolah_mcp.auth_provider import GithubUsernameFilteredProvider
-
         provider = GithubUsernameFilteredProvider(
             client_id="Ov23li_test",
             client_secret="test_secret",
