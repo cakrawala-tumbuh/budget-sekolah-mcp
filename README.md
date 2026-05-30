@@ -245,10 +245,12 @@ AUTHENTIK_BASE_URL=https://auth.cantum-ypii.com
 AUTHENTIK_APP_SLUG=budget-mcp
 AUTHENTIK_CLIENT_ID=<Client ID dari Authentik>
 AUTHENTIK_CLIENT_SECRET=<Client Secret dari Authentik>
-AUTHENTIK_ALLOWED_USERNAMES=andhit-r
+AUTHENTIK_ALLOWED_USERNAMES=
 ```
 
-> `AUTHENTIK_ALLOWED_USERNAMES` berisi daftar `preferred_username` Authentik yang diizinkan, dipisah koma. Kosongkan untuk mengizinkan semua user yang berhasil login ke Authentik.
+> **Kontrol akses sebaiknya dilakukan di Authentik** melalui **Policy Bindings** pada Application `budget-mcp` — pilih user atau group yang diizinkan. User yang tidak lolos policy Authentik akan ditolak sebelum sampai ke MCP server.
+>
+> `AUTHENTIK_ALLOWED_USERNAMES` adalah filter opsional tambahan di level MCP server. Kosongkan (default) jika Authentik sudah mengontrol akses dengan benar.
 
 #### Langkah 3 — Tambahkan ke Docker Compose
 
