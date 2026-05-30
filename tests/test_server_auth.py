@@ -121,4 +121,3 @@ class TestAsgiAuthMode:
         assert app is inner_app
         # Verify provider exist and is the right type
         assert isinstance(provider, OAuthProvider)
-
