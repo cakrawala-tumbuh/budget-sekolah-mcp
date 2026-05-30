@@ -5,9 +5,7 @@ Menguji semua tipe simulasi: UP, US, income, expenses, allocation,
 depreciation, dan summary. Memvalidasi penanganan 200, 404, dan 422.
 """
 
-import pytest
 from httpx import Response
-
 
 UP_RESULT = {
     "components": [],

@@ -5,13 +5,16 @@ Menguji operasi read-only: list_expense_categories, list_income_categories,
 dan list_investment_categories.
 """
 
-import pytest
 from httpx import Response
-
 
 EXPENSE_CATS = [
     {"id": 1, "account_code": "5110.01", "name": "Gaji", "category_type": "OPERATIONAL"},
-    {"id": 2, "account_code": "5590.01", "name": "Kontribusi Pusat UP", "category_type": "NON_OPERATIONAL"},
+    {
+        "id": 2,
+        "account_code": "5590.01",
+        "name": "Kontribusi Pusat UP",
+        "category_type": "NON_OPERATIONAL",
+    },
 ]
 
 INCOME_CATS = [

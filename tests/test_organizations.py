@@ -7,14 +7,13 @@ koneksi ke backend nyata.
 """
 
 import pytest
-import respx
 from fastmcp import FastMCP
 from httpx import Response
 
 from budget_sekolah_mcp.tools import organizations
 
-
 # ── Fixture ───────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mcp_with_orgs(mock_client):
@@ -26,6 +25,7 @@ def mcp_with_orgs(mock_client):
 
 # ── list_organizations ────────────────────────────────────────────────────────
 
+
 class TestListOrganizations:
     async def test_returns_items_on_success(self, mcp_with_orgs, respx_mock, base_url):
         """list_organizations mengembalikan dict dengan kunci items saat 200."""
@@ -35,6 +35,7 @@ class TestListOrganizations:
         )
 
         from budget_sekolah_mcp.tools.organizations import register
+
         mcp = FastMCP(name="test")
         register(mcp, client)
 
@@ -53,6 +54,7 @@ class TestListOrganizations:
 
 
 # ── get_organization ──────────────────────────────────────────────────────────
+
 
 class TestGetOrganization:
     async def test_returns_org_data_on_success(self, mock_client, respx_mock, base_url):
@@ -76,16 +78,18 @@ class TestGetOrganization:
 
 # ── create_organization ───────────────────────────────────────────────────────
 
+
 class TestCreateOrganization:
     async def test_creates_org_and_returns_201(self, mock_client, respx_mock, base_url):
         """create_organization mengembalikan data org baru termasuk generated_password."""
         created = {
-            "id": 10, "code": "SD-MBL", "org_type": "UNIT",
-            "name": "SD Maria Bintang Laut", "generated_password": "abc123"
+            "id": 10,
+            "code": "SD-MBL",
+            "org_type": "UNIT",
+            "name": "SD Maria Bintang Laut",
+            "generated_password": "abc123",
         }
-        respx_mock.post(f"{base_url}/organizations").mock(
-            return_value=Response(201, json=created)
-        )
+        respx_mock.post(f"{base_url}/organizations").mock(return_value=Response(201, json=created))
         response = await mock_client.post(
             "/organizations",
             json={"code": "SD-MBL", "name": "SD Maria Bintang Laut", "org_type": "UNIT"},
@@ -107,13 +111,12 @@ class TestCreateOrganization:
 
 # ── update_organization ───────────────────────────────────────────────────────
 
+
 class TestUpdateOrganization:
     async def test_updates_org_on_success(self, mock_client, respx_mock, base_url):
         """update_organization mengembalikan data org setelah update."""
         updated = {"id": 3, "code": "SD-MBL", "name": "SD MBL Updated", "org_type": "UNIT"}
-        respx_mock.put(f"{base_url}/organizations/3").mock(
-            return_value=Response(200, json=updated)
-        )
+        respx_mock.put(f"{base_url}/organizations/3").mock(return_value=Response(200, json=updated))
         response = await mock_client.put("/organizations/3", json={"name": "SD MBL Updated"})
         assert response.status_code == 200
         assert response.json()["name"] == "SD MBL Updated"
@@ -121,12 +124,11 @@ class TestUpdateOrganization:
 
 # ── delete_organization ───────────────────────────────────────────────────────
 
+
 class TestDeleteOrganization:
     async def test_returns_204_on_success(self, mock_client, respx_mock, base_url):
         """delete_organization mengembalikan 204 No Content jika berhasil."""
-        respx_mock.delete(f"{base_url}/organizations/3").mock(
-            return_value=Response(204)
-        )
+        respx_mock.delete(f"{base_url}/organizations/3").mock(return_value=Response(204))
         response = await mock_client.delete("/organizations/3")
         assert response.status_code == 204
 

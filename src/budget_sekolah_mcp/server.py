@@ -16,8 +16,8 @@ Cara menjalankan:
   fastmcp run src/budget_sekolah_mcp/server.py --transport sse --port 9170
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastmcp import FastMCP
 

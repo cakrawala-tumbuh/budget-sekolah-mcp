@@ -67,12 +67,8 @@ async def _collect_response(middleware, scope, body=b"") -> tuple[int, bytes]:
 
     await middleware(scope, receive, send)
 
-    status = next(
-        (e["status"] for e in events if e["type"] == "http.response.start"), 0
-    )
-    response_body = next(
-        (e["body"] for e in events if e["type"] == "http.response.body"), b""
-    )
+    status = next((e["status"] for e in events if e["type"] == "http.response.start"), 0)
+    response_body = next((e["body"] for e in events if e["type"] == "http.response.body"), b"")
     return status, response_body
 
 
@@ -144,9 +140,7 @@ class TestApiKeyMiddleware:
     @pytest.mark.asyncio
     async def test_authorization_bearer_valid_diteruskan(self, middleware, mock_app):
         """Request dengan Authorization: Bearer yang benar harus diteruskan."""
-        scope = _make_scope(
-            headers=[(b"authorization", f"Bearer {VALID_KEY}".encode())]
-        )
+        scope = _make_scope(headers=[(b"authorization", f"Bearer {VALID_KEY}".encode())])
         status, _ = await _collect_response(middleware, scope)
 
         assert status == 200
@@ -155,9 +149,7 @@ class TestApiKeyMiddleware:
     @pytest.mark.asyncio
     async def test_bearer_case_insensitive(self, middleware, mock_app):
         """Skema 'bearer' (huruf kecil) juga harus diterima."""
-        scope = _make_scope(
-            headers=[(b"authorization", f"bearer {VALID_KEY}".encode())]
-        )
+        scope = _make_scope(headers=[(b"authorization", f"bearer {VALID_KEY}".encode())])
         status, _ = await _collect_response(middleware, scope)
 
         assert status == 200
@@ -215,9 +207,7 @@ class TestApiKeyMiddleware:
     # ── Response 401 struktur ─────────────────────────────────────────────────
 
     @pytest.mark.asyncio
-    async def test_response_401_memiliki_www_authenticate_header(
-        self, middleware, mock_app
-    ):
+    async def test_response_401_memiliki_www_authenticate_header(self, middleware, mock_app):
         """Response 401 harus menyertakan header WWW-Authenticate."""
         scope = _make_scope(headers=[])
         events: list[dict] = []

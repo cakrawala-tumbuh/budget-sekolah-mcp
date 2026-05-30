@@ -5,23 +5,29 @@ Menguji operasi get/set tarif kontribusi serta operasi list dan upsert
 alokasi kontribusi dari unit/cabang ke cabang/pusat.
 """
 
-import pytest
 from httpx import Response
 
-
 RATES_DATA = {
-    "id": 1, "organization_id": 3,
-    "up_to_pusat": 0.04, "up_to_cabang": 0.12,
-    "us_to_pusat": 0.05, "us_to_cabang": 0.10,
-    "development_fund": 0.20, "deficit_reserve": 0.05,
-    "social_care": 0.03, "teacher_study": 0.03,
+    "id": 1,
+    "organization_id": 3,
+    "up_to_pusat": 0.04,
+    "up_to_cabang": 0.12,
+    "us_to_pusat": 0.05,
+    "us_to_cabang": 0.10,
+    "development_fund": 0.20,
+    "deficit_reserve": 0.05,
+    "social_care": 0.03,
+    "teacher_study": 0.03,
 }
 
 ALLOCATION_DATA = {
-    "id": 1, "organization_id": 2,  # CABANG
-    "from_organization_id": 3,       # UNIT
-    "total_students": 336, "new_students": 60,
-    "override_pct_us": None, "override_pct_up": None,
+    "id": 1,
+    "organization_id": 2,  # CABANG
+    "from_organization_id": 3,  # UNIT
+    "total_students": 336,
+    "new_students": 60,
+    "override_pct_us": None,
+    "override_pct_up": None,
 }
 
 
@@ -54,10 +60,16 @@ class TestSetContributionRates:
         )
         response = await mock_client.put(
             "/organizations/3/contribution-rates",
-            json={"up_to_pusat": 0.05, "up_to_cabang": 0.12,
-                  "us_to_pusat": 0.05, "us_to_cabang": 0.10,
-                  "development_fund": 0.20, "deficit_reserve": 0.05,
-                  "social_care": 0.03, "teacher_study": 0.03},
+            json={
+                "up_to_pusat": 0.05,
+                "up_to_cabang": 0.12,
+                "us_to_pusat": 0.05,
+                "us_to_cabang": 0.10,
+                "development_fund": 0.20,
+                "deficit_reserve": 0.05,
+                "social_care": 0.03,
+                "teacher_study": 0.03,
+            },
         )
         assert response.status_code == 200
         assert response.json()["up_to_pusat"] == 0.05

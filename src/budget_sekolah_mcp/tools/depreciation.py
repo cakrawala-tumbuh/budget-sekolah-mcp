@@ -153,9 +153,7 @@ def register(mcp: FastMCP, client: BudgetApiClient) -> None:
         Returns:
             Dict ``{"success": True}`` jika berhasil, atau kunci ``error`` jika gagal.
         """
-        response = await client.delete(
-            f"/organizations/{org_id}/depreciation/{asset_id}"
-        )
+        response = await client.delete(f"/organizations/{org_id}/depreciation/{asset_id}")
         if response.status_code == 204:
             return {"success": True}
         if response.status_code == 404:

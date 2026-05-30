@@ -5,16 +5,18 @@ Menguji operasi list, create, update, dan delete
 investasi aset tetap baru beserta kalkulasi depresiasi proporsionalnya.
 """
 
-import pytest
 from httpx import Response
 
-
 INVESTMENT_DATA = {
-    "id": 1, "organization_id": 3,
-    "investment_category_id": 7, "asset_code": "LK-001",
+    "id": 1,
+    "organization_id": 3,
+    "investment_category_id": 7,
+    "asset_code": "LK-001",
     "asset_name": "Laptop Acer Aspire 5 (30 unit)",
-    "purchase_price": 360000000, "useful_life": 4,
-    "start_month": 7, "annual_depreciation": 67500000,
+    "purchase_price": 360000000,
+    "useful_life": 4,
+    "start_month": 7,
+    "annual_depreciation": 67500000,
     "proportional_depreciation": 33750000,
 }
 
@@ -49,7 +51,9 @@ class TestCreateInvestment:
             json={
                 "investment_category_id": 7,
                 "asset_name": "Laptop Acer Aspire 5 (30 unit)",
-                "purchase_price": 360000000, "useful_life": 4, "start_month": 7,
+                "purchase_price": 360000000,
+                "useful_life": 4,
+                "start_month": 7,
             },
         )
         assert response.status_code == 201
@@ -62,8 +66,13 @@ class TestCreateInvestment:
         )
         response = await mock_client.post(
             "/organizations/3/investments",
-            json={"investment_category_id": 7, "asset_name": "X",
-                  "purchase_price": 1000, "useful_life": 4, "start_month": 13},
+            json={
+                "investment_category_id": 7,
+                "asset_name": "X",
+                "purchase_price": 1000,
+                "useful_life": 4,
+                "start_month": 13,
+            },
         )
         assert response.status_code == 422
 

@@ -5,16 +5,17 @@ Menguji operasi list, create, update, dan delete data aset lama
 beserta kalkulasi depresiasi garis lurusnya.
 """
 
-import pytest
 from httpx import Response
 
-
 OLD_ASSET_DATA = {
-    "id": 1, "organization_id": 3,
+    "id": 1,
+    "organization_id": 3,
     "asset_code": "LK-OLD-001",
     "asset_name": "Komputer Desktop Lama (10 unit)",
-    "acquisition_cost": 50000000, "useful_life": 5,
-    "acquisition_year": 2022, "annual_depreciation": 10000000,
+    "acquisition_cost": 50000000,
+    "useful_life": 5,
+    "acquisition_year": 2022,
+    "annual_depreciation": 10000000,
 }
 
 
@@ -48,7 +49,8 @@ class TestCreateOldAsset:
             json={
                 "asset_name": "Komputer Desktop Lama (10 unit)",
                 "acquisition_cost": 50000000,
-                "useful_life": 5, "acquisition_year": 2022,
+                "useful_life": 5,
+                "acquisition_year": 2022,
             },
         )
         assert response.status_code == 201
@@ -61,8 +63,12 @@ class TestCreateOldAsset:
         )
         response = await mock_client.post(
             "/organizations/3/depreciation",
-            json={"asset_name": "X", "acquisition_cost": 1000,
-                  "useful_life": 0, "acquisition_year": 2020},
+            json={
+                "asset_name": "X",
+                "acquisition_cost": 1000,
+                "useful_life": 0,
+                "acquisition_year": 2020,
+            },
         )
         assert response.status_code == 422
 

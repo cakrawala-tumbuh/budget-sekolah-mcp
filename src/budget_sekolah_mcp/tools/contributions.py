@@ -124,7 +124,10 @@ def register(mcp: FastMCP, client: BudgetApiClient) -> None:
         if response.status_code == 404:
             return {"error": "Organization not found", "org_id": org_id}
         if response.status_code == 422:
-            return {"error": "Alokasi kontribusi hanya berlaku untuk CABANG/PUSAT", "org_id": org_id}
+            return {
+                "error": "Alokasi kontribusi hanya berlaku untuk CABANG/PUSAT",
+                "org_id": org_id,
+            }
         return {"error": response.text, "status_code": response.status_code}
 
     @mcp.tool()
@@ -168,5 +171,8 @@ def register(mcp: FastMCP, client: BudgetApiClient) -> None:
         if response.status_code == 404:
             return {"error": "Organization not found", "org_id": org_id}
         if response.status_code == 422:
-            return {"error": "Alokasi kontribusi hanya berlaku untuk CABANG/PUSAT", "org_id": org_id}
+            return {
+                "error": "Alokasi kontribusi hanya berlaku untuk CABANG/PUSAT",
+                "org_id": org_id,
+            }
         return {"error": response.text, "status_code": response.status_code}

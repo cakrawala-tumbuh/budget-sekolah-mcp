@@ -5,15 +5,19 @@ Menguji operasi list, create, bulk create, update, delete entri biaya
 operasional dan non-operasional.
 """
 
-import pytest
 from httpx import Response
 
-
 ENTRY_DATA = {
-    "id": 1, "organization_id": 3, "expense_category_id": 5,
-    "line_number": 1, "description": "Gaji guru",
-    "basis": "24 × 12 × 3.500.000", "foundation": 1008000000,
-    "bos": 0, "total": 1008000000, "notes": None,
+    "id": 1,
+    "organization_id": 3,
+    "expense_category_id": 5,
+    "line_number": 1,
+    "description": "Gaji guru",
+    "basis": "24 × 12 × 3.500.000",
+    "foundation": 1008000000,
+    "bos": 0,
+    "total": 1008000000,
+    "notes": None,
 }
 
 
@@ -45,8 +49,10 @@ class TestCreateBudgetEntry:
         response = await mock_client.post(
             "/organizations/3/budget-entries",
             json={
-                "expense_category_id": 5, "line_number": 1,
-                "description": "Gaji guru", "foundation": 1008000000,
+                "expense_category_id": 5,
+                "line_number": 1,
+                "description": "Gaji guru",
+                "foundation": 1008000000,
             },
         )
         assert response.status_code == 201
@@ -67,14 +73,26 @@ class TestCreateBudgetEntry:
 class TestBulkCreateBudgetEntries:
     async def test_bulk_creates_entries(self, mock_client, respx_mock, base_url):
         """bulk_create_budget_entries mengembalikan list entri yang dibuat."""
-        bulk_result = {"created": 2, "items": [ENTRY_DATA, {**ENTRY_DATA, "id": 2, "line_number": 2}]}
+        bulk_result = {
+            "created": 2,
+            "items": [ENTRY_DATA, {**ENTRY_DATA, "id": 2, "line_number": 2}],
+        }
         respx_mock.post(f"{base_url}/organizations/3/budget-entries/bulk").mock(
             return_value=Response(201, json=bulk_result)
         )
         response = await mock_client.post(
             "/organizations/3/budget-entries/bulk",
-            json={"entries": [{"expense_category_id": 5, "line_number": 1, "description": "a",
-                               "foundation": 1000, "bos": 0}]},
+            json={
+                "entries": [
+                    {
+                        "expense_category_id": 5,
+                        "line_number": 1,
+                        "description": "a",
+                        "foundation": 1000,
+                        "bos": 0,
+                    }
+                ]
+            },
         )
         assert response.status_code == 201
         assert response.json()["created"] == 2
@@ -86,7 +104,5 @@ class TestDeleteBudgetEntryByCategory:
         respx_mock.delete(f"{base_url}/organizations/3/budget-entries/by-category/5").mock(
             return_value=Response(204)
         )
-        response = await mock_client.delete(
-            "/organizations/3/budget-entries/by-category/5"
-        )
+        response = await mock_client.delete("/organizations/3/budget-entries/by-category/5")
         assert response.status_code == 204

@@ -5,14 +5,17 @@ Menguji operasi list, create, bulk create, update, dan delete
 entri pendapatan yang tidak dihitung otomatis oleh sistem.
 """
 
-import pytest
 from httpx import Response
 
-
 INCOME_ENTRY = {
-    "id": 1, "organization_id": 3, "income_category_id": 8,
-    "line_number": 1, "description": "Program Mandarin kelas 1-6",
-    "basis": "316 siswa × Rp 100.000", "amount": 31600000, "notes": None,
+    "id": 1,
+    "organization_id": 3,
+    "income_category_id": 8,
+    "line_number": 1,
+    "description": "Program Mandarin kelas 1-6",
+    "basis": "316 siswa × Rp 100.000",
+    "amount": 31600000,
+    "notes": None,
 }
 
 
@@ -44,8 +47,10 @@ class TestCreateIncomeEntry:
         response = await mock_client.post(
             "/organizations/3/income-entries",
             json={
-                "income_category_id": 8, "line_number": 1,
-                "description": "Program Mandarin kelas 1-6", "amount": 31600000,
+                "income_category_id": 8,
+                "line_number": 1,
+                "description": "Program Mandarin kelas 1-6",
+                "amount": 31600000,
             },
         )
         assert response.status_code == 201
@@ -60,8 +65,16 @@ class TestBulkCreateIncomeEntries:
         )
         response = await mock_client.post(
             "/organizations/3/income-entries/bulk",
-            json={"entries": [{"income_category_id": 8, "line_number": 1,
-                               "description": "Mandarin", "amount": 31600000}]},
+            json={
+                "entries": [
+                    {
+                        "income_category_id": 8,
+                        "line_number": 1,
+                        "description": "Mandarin",
+                        "amount": 31600000,
+                    }
+                ]
+            },
         )
         assert response.status_code == 201
         assert response.json()["created"] == 1
