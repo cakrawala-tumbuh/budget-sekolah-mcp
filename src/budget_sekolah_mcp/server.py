@@ -60,9 +60,7 @@ async def lifespan(_app: FastMCP) -> AsyncGenerator[None, None]:
 # ── Auth provider (dipilih otomatis) ─────────────────────────────────────────
 _auth = None
 _github_oauth_aktif = (
-    settings.github_client_id
-    and settings.github_client_secret
-    and settings.mcp_base_url
+    settings.github_client_id and settings.github_client_secret and settings.mcp_base_url
 )
 
 if _github_oauth_aktif:

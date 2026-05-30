@@ -124,9 +124,7 @@ class TestGithubUsernameFilteredProvider:
             base_url="https://mcp.example.com",
             allowed_usernames=["andhit-r"],
         )
-        claims = await provider._extract_upstream_claims(
-            {"access_token": "gho_test_token"}
-        )
+        claims = await provider._extract_upstream_claims({"access_token": "gho_test_token"})
 
         assert claims is not None
         assert claims["login"] == "andhit-r"
@@ -155,9 +153,7 @@ class TestGithubUsernameFilteredProvider:
         assert "orang-lain" in exc_info.value.error_description
 
     @pytest.mark.asyncio
-    async def test_extract_upstream_claims_tanpa_whitelist_semua_diizinkan(
-        self, respx_mock
-    ):
+    async def test_extract_upstream_claims_tanpa_whitelist_semua_diizinkan(self, respx_mock):
         """Jika allowed_usernames kosong, semua GitHub user harus diizinkan."""
         respx_mock.get("https://api.github.com/user").mock(
             return_value=httpx.Response(
@@ -172,9 +168,7 @@ class TestGithubUsernameFilteredProvider:
             base_url="https://mcp.example.com",
             allowed_usernames=[],
         )
-        claims = await provider._extract_upstream_claims(
-            {"access_token": "gho_test_token"}
-        )
+        claims = await provider._extract_upstream_claims({"access_token": "gho_test_token"})
 
         assert claims is not None
         assert claims["login"] == "siapapun"

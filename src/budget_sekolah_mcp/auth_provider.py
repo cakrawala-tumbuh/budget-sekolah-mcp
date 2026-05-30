@@ -80,9 +80,7 @@ class GithubUsernameFilteredProvider(GitHubProvider):
             u.lower().strip() for u in allowed_usernames if u.strip()
         )
 
-    async def _extract_upstream_claims(
-        self, idp_tokens: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    async def _extract_upstream_claims(self, idp_tokens: dict[str, Any]) -> dict[str, Any] | None:
         """Validasi GitHub username dan kembalikan claims untuk disematkan di JWT.
 
         Memanggil GitHub API untuk mendapatkan identitas pengguna dari
@@ -117,9 +115,7 @@ class GithubUsernameFilteredProvider(GitHubProvider):
                 )
         except httpx.RequestError as exc:
             logger.warning("Gagal menghubungi GitHub API: %s", exc)
-            raise TokenError(
-                "server_error", "Tidak dapat memverifikasi identitas GitHub"
-            ) from exc
+            raise TokenError("server_error", "Tidak dapat memverifikasi identitas GitHub") from exc
 
         if response.status_code != 200:
             logger.warning(
