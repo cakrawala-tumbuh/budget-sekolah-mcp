@@ -6,9 +6,10 @@ Server menggunakan pola lifespan untuk:
   2. Menutup koneksi HTTP saat shutdown
 
 Autentikasi (dipilih otomatis berdasarkan konfigurasi):
-  - GitHub OAuth (Claude.ai): Aktif jika GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET,
-    dan MCP_BASE_URL dikonfigurasi. Pengguna login via GitHub; hanya username
-    yang tercantum di GITHUB_ALLOWED_USERNAMES yang diizinkan.
+  - Authentik OAuth (Claude.ai): Aktif jika AUTHENTIK_BASE_URL, AUTHENTIK_APP_SLUG,
+    AUTHENTIK_CLIENT_ID, AUTHENTIK_CLIENT_SECRET, dan MCP_BASE_URL dikonfigurasi.
+    Pengguna login via Authentik; hanya username yang tercantum di
+    AUTHENTIK_ALLOWED_USERNAMES yang diizinkan (kosong = semua user).
   - API Key (VS Code / tools lain): Aktif jika MCP_API_KEY dikonfigurasi.
     Request wajib menyertakan header 'Authorization: Bearer <key>'.
   - Keduanya bisa aktif bersamaan via MultiAuth.
@@ -59,35 +60,42 @@ async def lifespan(_app: FastMCP) -> AsyncGenerator[None, None]:
 
 # ── Auth provider (dipilih otomatis) ─────────────────────────────────────────
 _auth = None
-_github_oauth_aktif = (
-    settings.github_client_id and settings.github_client_secret and settings.mcp_base_url
+_authentik_oauth_aktif = (
+    settings.authentik_base_url
+    and settings.authentik_app_slug
+    and settings.authentik_client_id
+    and settings.authentik_client_secret
+    and settings.mcp_base_url
 )
 
-if _github_oauth_aktif:
+if _authentik_oauth_aktif:
     from fastmcp.server.auth import MultiAuth
 
-    from .auth_provider import BearerApiKeyVerifier, GithubUsernameFilteredProvider
+    from .auth_provider import AuthentikProvider, BearerApiKeyVerifier
 
     logger.info(
-        "OAuth GitHub AKTIF — base_url: %s | allowed_usernames: %s",
-        settings.mcp_base_url,
-        settings.github_allowed_usernames or "(semua diizinkan)",
+        "OAuth Authentik AKTIF — base_url: %s | slug: %s | allowed: %s",
+        settings.authentik_base_url,
+        settings.authentik_app_slug,
+        settings.authentik_allowed_usernames or "(semua diizinkan)",
     )
-    _github_provider = GithubUsernameFilteredProvider(
-        client_id=settings.github_client_id,
-        client_secret=settings.github_client_secret,
+    _authentik_provider = AuthentikProvider(
+        authentik_base_url=settings.authentik_base_url,
+        application_slug=settings.authentik_app_slug,
+        client_id=settings.authentik_client_id,
+        client_secret=settings.authentik_client_secret,
         base_url=settings.mcp_base_url,
-        allowed_usernames=settings.github_allowed_usernames,
-        require_authorization_consent=True,
+        allowed_usernames=settings.authentik_allowed_usernames,
+        require_authorization_consent="external",
     )
     if settings.mcp_api_key:
-        logger.info("API Key AKTIF (MultiAuth: GitHub OAuth + API Key)")
+        logger.info("API Key AKTIF (MultiAuth: Authentik OAuth + API Key)")
         _auth = MultiAuth(
-            server=_github_provider,
+            server=_authentik_provider,
             verifiers=[BearerApiKeyVerifier(api_key=settings.mcp_api_key)],
         )
     else:
-        _auth = _github_provider
+        _auth = _authentik_provider
 
 elif settings.mcp_api_key:
     from fastmcp.server.auth import MultiAuth
@@ -100,7 +108,7 @@ elif settings.mcp_api_key:
 else:
     logger.warning(
         "Tidak ada autentikasi dikonfigurasi — server berjalan terbuka. "
-        "Tambahkan GITHUB_CLIENT_ID/SECRET dan MCP_BASE_URL untuk deployment cloud."
+        "Tambahkan AUTHENTIK_* dan MCP_BASE_URL untuk deployment cloud."
     )
 
 

@@ -10,15 +10,18 @@ Variabel wajib:
   BUDGET_API_USERNAME        — username login ke backend
   BUDGET_API_PASSWORD        — password login ke backend
 
-Variabel opsional (OAuth via GitHub — untuk Claude.ai):
-  MCP_BASE_URL               — URL publik MCP server.
-                               Wajib diisi agar OAuth berfungsi.
-                               Contoh: https://mcp.budget-26.cantum-ypii.com
-  GITHUB_CLIENT_ID           — Client ID dari GitHub OAuth App.
-  GITHUB_CLIENT_SECRET       — Client Secret dari GitHub OAuth App.
-  GITHUB_ALLOWED_USERNAMES   — Username GitHub yang diizinkan, dipisah koma.
-                               Contoh: "andhit-r" atau "andhit-r,user2".
-                               Kosong = semua GitHub user diizinkan.
+Variabel opsional (OAuth via Authentik — untuk Claude.ai):
+  MCP_BASE_URL                  — URL publik MCP server.
+                                  Wajib diisi agar OAuth berfungsi.
+                                  Contoh: https://mcp.budget-26.cantum-ypii.com
+  AUTHENTIK_BASE_URL            — URL dasar Authentik.
+                                  Contoh: https://auth.cantum-ypii.com
+  AUTHENTIK_APP_SLUG            — Slug OAuth2 Provider di Authentik.
+                                  Contoh: budget-mcp
+  AUTHENTIK_CLIENT_ID           — Client ID dari Authentik OAuth2 Provider.
+  AUTHENTIK_CLIENT_SECRET       — Client Secret dari Authentik OAuth2 Provider.
+  AUTHENTIK_ALLOWED_USERNAMES   — preferred_username Authentik yang diizinkan,
+                                  dipisah koma. Kosong = semua user diizinkan.
 
 Variabel opsional (API Key — untuk VS Code / tools lain):
   MCP_API_KEY                — API key statis. Request wajib menyertakan
@@ -43,14 +46,18 @@ class Settings(BaseSettings):
         http_timeout: Timeout HTTP request dalam detik.
         mcp_base_url: URL publik MCP server. Wajib diisi jika OAuth aktif.
             Contoh: ``https://mcp.budget-26.cantum-ypii.com``.
-        github_client_id: Client ID dari GitHub OAuth App.
-            Jika diisi bersama ``github_client_secret`` dan ``mcp_base_url``,
-            server mengaktifkan OAuth via GitHub sebagai identity provider.
-        github_client_secret: Client Secret dari GitHub OAuth App.
-        github_allowed_usernames: Daftar GitHub username yang diizinkan,
-            dipisah koma. Contoh: ``"andhit-r"`` atau ``"andhit-r,user2"``.
-            Kosong = semua GitHub user diizinkan (tidak disarankan untuk
-            deployment publik).
+        authentik_base_url: URL dasar Authentik, contoh
+            ``https://auth.cantum-ypii.com``. Jika diisi bersama
+            ``authentik_app_slug``, ``authentik_client_id``,
+            ``authentik_client_secret``, dan ``mcp_base_url``, server
+            mengaktifkan OAuth via Authentik sebagai identity provider.
+        authentik_app_slug: Slug OAuth2/OIDC Provider di Authentik,
+            contoh ``budget-mcp``.
+        authentik_client_id: Client ID dari Authentik OAuth2 Provider.
+        authentik_client_secret: Client Secret dari Authentik OAuth2 Provider.
+        authentik_allowed_usernames: Daftar ``preferred_username`` Authentik
+            yang diizinkan, dipisah koma. Contoh: ``"andhit-r"``.
+            Kosong = semua user Authentik diizinkan (tidak disarankan).
         mcp_api_key: API key statis untuk akses dari VS Code dan tools lain
             yang tidak mendukung OAuth. Request wajib menyertakan header
             ``Authorization: Bearer <key>``.
@@ -64,9 +71,11 @@ class Settings(BaseSettings):
     mcp_log_level: str = "INFO"
     http_timeout: float = 30.0
     mcp_base_url: str | None = None
-    github_client_id: str | None = None
-    github_client_secret: str | None = None
-    github_allowed_usernames: list[str] = []
+    authentik_base_url: str | None = None
+    authentik_app_slug: str | None = None
+    authentik_client_id: str | None = None
+    authentik_client_secret: str | None = None
+    authentik_allowed_usernames: list[str] = []
     mcp_api_key: str | None = None
 
     model_config = SettingsConfigDict(
