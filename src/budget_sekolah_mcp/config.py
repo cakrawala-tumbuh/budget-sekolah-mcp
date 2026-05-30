@@ -28,7 +28,6 @@ Variabel opsional (API Key — untuk VS Code / tools lain):
                                header 'Authorization: Bearer <key>'.
 """
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -57,9 +56,8 @@ class Settings(BaseSettings):
         authentik_client_id: Client ID dari Authentik OAuth2 Provider.
         authentik_client_secret: Client Secret dari Authentik OAuth2 Provider.
         authentik_allowed_usernames: Daftar ``preferred_username`` Authentik
-            yang diizinkan. Dapat berupa JSON array (``["a","b"]``) atau
-            string dipisah koma (``"andhit-r,user2"``), atau string kosong
-            untuk mengizinkan semua user Authentik.
+            yang diizinkan, dalam format JSON array (``["a","b"]``).
+            Nilai kosong atau tidak diset = semua user Authentik diizinkan.
         mcp_api_key: API key statis untuk akses dari VS Code dan tools lain
             yang tidak mendukung OAuth. Request wajib menyertakan header
             ``Authorization: Bearer <key>``.
@@ -80,33 +78,8 @@ class Settings(BaseSettings):
     authentik_allowed_usernames: list[str] = []
     mcp_api_key: str | None = None
 
-    @field_validator("authentik_allowed_usernames", mode="before")
-    @classmethod
-    def parse_allowed_usernames(cls, v: object) -> list[str]:
-        """Normalisasi nilai env var ke list[str].
-
-        Mendukung tiga format input:
-          - String kosong (``""``): dikembalikan sebagai ``[]``
-          - String dipisah koma (``"andhit-r,user2"``): dipecah per koma
-          - JSON array (``'["andhit-r","user2"]'``): diteruskan ke pydantic
-          - List: diteruskan apa adanya
-
-        Args:
-            v: Nilai field sebelum validasi.
-
-        Returns:
-            List username yang sudah dinormalisasi.
-        """
-        if v is None or (isinstance(v, str) and not v.strip()):
-            return []
-        if isinstance(v, str):
-            # Jika bukan JSON array, anggap comma-separated
-            stripped = v.strip()
-            if not stripped.startswith("["):
-                return [u.strip() for u in stripped.split(",") if u.strip()]
-        return v  # type: ignore[return-value]
-
     model_config = SettingsConfigDict(
+        env_ignore_empty=True,
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
