@@ -122,10 +122,13 @@ from .tools import (  # noqa: E402
     categories,
     contributions,
     depreciation,
+    grade_configs,
     income_entries,
     investments,
     organizations,
+    parent_expense_allocations,
     simulation,
+    subsidies,
 )
 
 assumptions.register(mcp, _client)
@@ -133,7 +136,10 @@ budget_entries.register(mcp, _client)
 categories.register(mcp, _client)
 contributions.register(mcp, _client)
 depreciation.register(mcp, _client)
+grade_configs.register(mcp, _client)
 income_entries.register(mcp, _client)
 investments.register(mcp, _client)
 organizations.register(mcp, _client)
+parent_expense_allocations.register(mcp, _client)
 simulation.register(mcp, _client)
+subsidies.register(mcp, _client)

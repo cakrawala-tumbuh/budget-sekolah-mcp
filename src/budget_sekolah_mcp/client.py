@@ -144,6 +144,18 @@ class BudgetApiClient:
         """
         return await self._request("PUT", path, json=json)
 
+    async def patch(self, path: str, *, json: dict | None = None) -> httpx.Response:
+        """Kirim HTTP PATCH request dengan body JSON (partial update).
+
+        Args:
+            path: Path endpoint.
+            json: Body request sebagai dict (hanya field yang diubah).
+
+        Returns:
+            httpx.Response dari server.
+        """
+        return await self._request("PATCH", path, json=json)
+
     async def delete(self, path: str) -> httpx.Response:
         """Kirim HTTP DELETE request.
 
