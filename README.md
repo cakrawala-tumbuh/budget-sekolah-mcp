@@ -45,6 +45,9 @@ Server ini memungkinkan AI agent (Claude Desktop, VS Code Copilot, dsb.) mengaks
 | `get_contribution_rates` | Baca tarif kontribusi |
 | `update_contribution_rates` | Set tarif kontribusi |
 | `list_expense_categories` | Daftar kategori biaya (seed data) |
+| `create_expense_category` | Buat kategori biaya baru *(admin)* |
+| `update_expense_category` | Ubah flag/atribut kategori biaya — mis. `is_operational` *(admin, global)* |
+| `delete_expense_category` | Hapus kategori biaya *(admin)* |
 | `list_income_categories` | Daftar kategori pendapatan (seed data) |
 | `list_investment_categories` | Daftar kategori investasi (seed data) |
 | `simulate_up` | Simulasi komponen Uang Pangkal *(UNIT only)* |
