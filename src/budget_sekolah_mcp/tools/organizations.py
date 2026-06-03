@@ -5,11 +5,12 @@ Menyediakan tool-tool CRUD untuk entitas Organization di budget-backend-ypii.
 Operasi create, update, dan delete membutuhkan akses admin.
 
 Tools yang tersedia:
-  list_organizations   — Daftar semua organisasi
-  get_organization     — Detail satu organisasi beserta anak langsungnya
-  create_organization  — Buat organisasi baru (admin only)
-  update_organization  — Update nama/kota/parent organisasi (admin only)
-  delete_organization  — Hapus organisasi (admin only)
+  list_organizations           — Daftar semua organisasi
+  get_organization             — Detail satu organisasi beserta anak langsungnya
+  create_organization          — Buat organisasi baru (admin only)
+  update_organization          — Update nama/kota/parent organisasi (admin only)
+  delete_organization          — Hapus organisasi (admin only)
+  reset_organization_password  — Reset password login organisasi (admin only)
 
 Dependensi:
   client.BudgetApiClient — HTTP client ke backend API
@@ -177,4 +178,30 @@ def register(mcp: FastMCP, client: BudgetApiClient) -> None:
             return {"success": True, "org_id": org_id}
         if response.status_code == 404:
             return {"error": "Organization not found", "org_id": org_id}
+        return {"error": response.text, "status_code": response.status_code}
+
+    @mcp.tool()
+    async def reset_organization_password(org_id: int) -> dict:
+        """Reset password login organisasi (membutuhkan akses admin).
+
+        Generate password baru secara acak untuk akun user organisasi.
+        Password baru dikembalikan sekali dalam response — simpan baik-baik.
+
+        Args:
+            org_id: ID numerik organisasi yang passwordnya akan direset.
+
+        Returns:
+            Dict berisi ``org_id``, ``username``, dan ``new_password``,
+            atau kunci ``error`` jika gagal.
+
+        Example:
+            >>> result = await reset_organization_password(org_id=5)
+            >>> result["new_password"]
+            'aB3xQ...'
+        """
+        response = await client.post(f"/organizations/{org_id}/reset-password")
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            return {"error": "Organization or user not found", "org_id": org_id}
         return {"error": response.text, "status_code": response.status_code}
