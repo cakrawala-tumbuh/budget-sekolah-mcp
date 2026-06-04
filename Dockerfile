@@ -10,21 +10,9 @@ COPY src/ src/
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools>=68 wheel && \
     pip install --no-cache-dir .
 
-# ── Stage: test ───────────────────────────────────────────────────────────────
-# Menyertakan dev dependencies dan test files. Digunakan khusus untuk pytest.
-FROM base AS test
-
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
-
-COPY tests/ tests/
-
-# Set env vars dummy agar pydantic-settings tidak error saat test
-ENV BUDGET_API_BASE_URL=http://api.budget-test.local \
-    BUDGET_API_USERNAME=test \
-    BUDGET_API_PASSWORD=test
-
-CMD ["python", "-m", "pytest", "tests/", "-v"]
+# Catatan: automated test TIDAK lagi memakai stage di sini. Image test dibangun
+# dari Dockerfile.test dan dijalankan via `make test` (lihat Makefile) agar
+# lingkungan identik antara lokal dan CI.
 
 # ── Stage: production ─────────────────────────────────────────────────────────
 # Image ramping untuk deployment — tidak menyertakan test files.

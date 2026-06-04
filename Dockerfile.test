@@ -1,0 +1,32 @@
+# ── Image khusus automated test (linter + unit) ───────────────────────────────
+# Dibangun & dijalankan HANYA via Makefile (`make test`), baik di lokal maupun
+# di GitHub Actions, sehingga lingkungan identik (parity).
+#
+# Strategi anti-artefak: source di-COPY ke image (bukan bind-mount). Saat
+# `docker run --rm`, semua tulisan (cache pytest/ruff, __pycache__) hidup di
+# container dan ikut terhapus — folder project di host tidak pernah ditulisi.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 1) Install dependency runtime dari paket. Di-layer lebih dulu agar cache build
+#    tidak invalid saat hanya test yang berubah.
+COPY pyproject.toml ./
+COPY src/ src/
+RUN python -m pip install --no-cache-dir --upgrade pip "setuptools>=68" wheel \
+    && pip install --no-cache-dir .
+
+# 2) Install tooling test dengan versi dipin.
+COPY requirements-test.txt ./
+RUN pip install --no-cache-dir -r requirements-test.txt
+
+# 3) Masukkan test.
+COPY tests/ tests/
+
+# Env dummy agar pydantic-settings tidak error saat import (tidak ada koneksi nyata).
+ENV BUDGET_API_BASE_URL=http://api.budget-test.local \
+    BUDGET_API_USERNAME=test \
+    BUDGET_API_PASSWORD=test
+
+# Default command = unit test. Makefile meng-override command ini untuk lint.
+CMD ["python", "-m", "pytest", "tests/", "-v"]

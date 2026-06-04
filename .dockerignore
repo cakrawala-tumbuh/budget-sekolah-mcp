@@ -1,0 +1,38 @@
+# Source di-COPY ke image (lihat Dockerfile.test). Kecualikan artefak &
+# dependency host agar build cepat, bersih, dan dependency selalu di-install
+# fresh di dalam image — bukan ikut dari host yang mungkin "kotor".
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python bytecode & build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Test / cache artifacts
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# VCS & meta
+.git/
+.github/
+.gitignore
+
+# Secrets & local env
+.env
+*.env
+
+# Docs & editor
+README.md
+.vscode/
+.idea/

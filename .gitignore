@@ -19,8 +19,10 @@ env/
 .env
 *.env
 
-# Pytest / coverage
+# Pytest / coverage / linter cache
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
 coverage.xml

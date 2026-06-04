@@ -304,21 +304,30 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## Menjalankan Test
 
-> ⚠️ **Wajib menggunakan Docker.** Jangan jalankan pytest langsung via virtualenv lokal.
+> ⚠️ **Wajib lewat `make` (Docker).** Jangan jalankan pytest/ruff langsung di
+> virtualenv lokal. Lokal dan GitHub Actions memakai gate yang sama: `make test`.
 
 ```bash
-# Build image stage test
-docker build --target test -t budget-sekolah-mcp:test .
+# Gate lengkap = linter (Ruff) + unit test (pytest), berjalan di Docker
+make test
 
-# Jalankan semua test
-docker run --rm budget-sekolah-mcp:test
+# Hanya linter
+make lint
 
-# Jalankan satu file test
-docker run --rm budget-sekolah-mcp:test python -m pytest tests/test_simulation.py -v
+# Hanya unit test
+make unit
 
-# Jalankan satu test case
-docker run --rm budget-sekolah-mcp:test python -m pytest tests/test_simulation.py::TestSimulationTools::test_simulate_up -v
+# Bangun ulang image test / hapus image
+make build
+make clean
+
+# Daftar target
+make help
 ```
+
+Test berjalan di dalam container dari `Dockerfile.test` dengan `docker run --rm`
+(tanpa bind-mount), sehingga tidak ada artefak (cache, `__pycache__`, coverage)
+yang bocor ke folder project.
 
 ---
 
@@ -326,7 +335,7 @@ docker run --rm budget-sekolah-mcp:test python -m pytest tests/test_simulation.p
 
 | Workflow | Trigger | Aksi |
 |----------|---------|------|
-| `ci.yml` | Push/PR ke `master` | Lint (Ruff) + Build Docker + Unit test |
+| `test.yml` | Push/PR ke `master` | `make test` → Lint (Ruff) + Unit test di Docker |
 | `release.yml` | Push tag `v*.*.*` | Build & push image ke GHCR + GitHub Release otomatis |
 
 Image tersedia di:
@@ -351,8 +360,12 @@ budget-sekolah-mcp/
 │       └── tools/           # Implementasi setiap tool MCP
 ├── tests/                   # Unit test (pytest + respx)
 ├── .github/
-│   └── workflows/           # GitHub Actions CI/CD
-├── Dockerfile               # Multi-stage: base, test, production
+│   └── workflows/           # GitHub Actions CI/CD (test.yml, release.yml)
+├── Makefile                 # Pintu test: make test (lint + unit) di Docker
+├── Dockerfile               # Multi-stage: base, production
+├── Dockerfile.test          # Image khusus automated test (lint + unit)
+├── .dockerignore
+├── requirements-test.txt    # Tooling test dengan versi dipin
 ├── pyproject.toml
 ├── .env.example
 └── README.md
