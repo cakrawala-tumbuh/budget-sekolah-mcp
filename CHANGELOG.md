@@ -7,6 +7,15 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Ditambahkan
+- Tool `update_income_category` untuk mengubah `label`, `is_operational`, dan
+  `sort_order` satu kategori pendapatan (partial update, admin) lewat
+  `PUT /income-categories/{category_id}`.
+
+### Diubah
+- `list_income_categories` kini menyertakan `is_operational` pada tiap
+  kategori pendapatan yang dikembalikan.
+
 ## [1.6.2] - 2026-06-04
 
 ### Diubah

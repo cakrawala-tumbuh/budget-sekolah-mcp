@@ -12,12 +12,14 @@ Tools yang tersedia:
   update_expense_category    — Ubah flag/atribut kategori biaya (admin)
   delete_expense_category    — Hapus kategori biaya (admin)
   list_income_categories     — Daftar kategori pendapatan (akun 4110–4620)
+  update_income_category     — Ubah flag/atribut kategori pendapatan (admin)
   list_investment_categories — Daftar kategori investasi (akun 1330.01–1330.08)
 
-Catatan: kategori biaya adalah data referensi GLOBAL (dipakai semua
-organisasi). Mengubah flag seperti ``is_operational`` memengaruhi
-perhitungan UP/US untuk SELURUH organisasi, bukan satu unit saja.
-Operasi tulis (create/update/delete) memerlukan akses admin.
+Catatan: kategori biaya dan pendapatan adalah data referensi GLOBAL (dipakai
+semua organisasi). Mengubah flag seperti ``is_operational`` memengaruhi
+pengelompokan operasional/non-operasional laporan RAB untuk SELURUH
+organisasi, bukan satu unit saja. Operasi tulis (create/update/delete)
+memerlukan akses admin.
 
 Dependensi:
   client.BudgetApiClient — HTTP client ke backend API
@@ -65,24 +67,78 @@ def register(mcp: FastMCP, client: BudgetApiClient) -> None:
         """Ambil daftar semua kategori pendapatan yang tersedia di sistem.
 
         Kategori pendapatan mencakup akun 4110–4620. Gunakan ``id`` dari
-        hasil ini saat membuat atau mengupdate entri pendapatan manual.
-        Perhatikan: tidak semua akun pendapatan perlu diisi manual —
-        beberapa dihitung otomatis dari simulasi (UP, US, BOS).
+        hasil ini saat membuat atau mengupdate entri pendapatan manual, atau
+        saat menentukan kategori mana yang perlu disetel lewat
+        ``update_income_category``. Perhatikan: tidak semua akun pendapatan
+        perlu diisi manual — beberapa dihitung otomatis dari simulasi
+        (UP, US, BOS).
 
         Returns:
             Dict dengan kunci ``items`` berisi list kategori pendapatan,
-            masing-masing memiliki ``id``, ``account_code``, dan ``name``.
-            Atau kunci ``error`` jika request gagal.
+            masing-masing memiliki ``id``, ``account_code``, ``name``, dan
+            ``is_operational`` (True = operasional, False = non-operasional
+            — menentukan penempatannya di laporan RAB). Atau kunci
+            ``error`` jika request gagal.
 
         Example:
             >>> result = await list_income_categories()
             >>> result["items"][0]["account_code"]
             '4110.01'
+            >>> result["items"][0]["is_operational"]
+            True
         """
         response = await client.get("/income-categories")
         if response.status_code == 200:
             return {"items": response.json()}
         return {"error": response.text, "status_code": response.status_code}
+
+    @mcp.tool()
+    async def update_income_category(
+        category_id: int,
+        label: str | None = None,
+        is_operational: bool | None = None,
+        sort_order: int | None = None,
+    ) -> dict:
+        """Ubah atribut/flag satu kategori pendapatan (partial update, admin).
+
+        Hanya field yang diisi (bukan None) yang dikirim dan diperbarui.
+        PERHATIAN: kategori pendapatan GLOBAL — mengubah ``is_operational``
+        memengaruhi pengelompokan operasional/non-operasional laporan RAB
+        untuk SEMUA organisasi yang memakai kategori ini, bukan satu unit
+        saja. Gunakan ``list_income_categories`` lebih dulu untuk menemukan
+        ``category_id`` dan nilai ``is_operational`` saat ini.
+
+        Args:
+            category_id: ID kategori pendapatan yang diubah
+                (lihat list_income_categories untuk ``id``).
+            label: Nama baru (None = tidak diubah).
+            is_operational: True → operasional; False → non-operasional
+                (None = tidak diubah).
+            sort_order: Urutan tampil baru (None = tidak diubah).
+
+        Returns:
+            Dict data kategori setelah diperbarui, atau kunci ``error`` jika
+            gagal (mis. 404 bila tidak ditemukan, 403 bila bukan admin).
+
+        Example:
+            >>> result = await update_income_category(28, is_operational=False)
+            >>> result["is_operational"]
+            False
+        """
+        payload: dict = {}
+        if label is not None:
+            payload["label"] = label
+        if is_operational is not None:
+            payload["is_operational"] = is_operational
+        if sort_order is not None:
+            payload["sort_order"] = sort_order
+
+        response = await client.update_income_category(category_id, payload)
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            return {"error": "Income category not found", "context": {"category_id": category_id}}
+        return {"error": response.text, "context": {"status_code": response.status_code}}
 
     @mcp.tool()
     async def list_investment_categories() -> dict:

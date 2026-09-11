@@ -2,10 +2,17 @@
 Unit test untuk tool categories (kategori biaya, pendapatan, investasi).
 
 Menguji operasi read-only: list_expense_categories, list_income_categories,
-dan list_investment_categories.
+list_investment_categories; serta operasi tulis update_income_category
+(dipanggil via fastmcp.Client in-memory agar logika partial-update di
+dalam tool benar-benar teruji, bukan hanya dipalsukan ulang di test).
 """
 
+import json
+
+from fastmcp import Client, FastMCP
 from httpx import Response
+
+from budget_sekolah_mcp.tools import categories
 
 EXPENSE_CATS = [
     {"id": 1, "account_code": "5110.01", "name": "Gaji", "category_type": "OPERATIONAL"},
@@ -18,9 +25,9 @@ EXPENSE_CATS = [
 ]
 
 INCOME_CATS = [
-    {"id": 1, "account_code": "4110.01", "name": "Uang Pangkal"},
-    {"id": 2, "account_code": "4120.01", "name": "Uang Sekolah"},
-    {"id": 3, "account_code": "4120.03", "name": "Uang Mandarin"},
+    {"id": 1, "account_code": "4110.01", "name": "Uang Pangkal", "is_operational": True},
+    {"id": 2, "account_code": "4120.01", "name": "Uang Sekolah", "is_operational": True},
+    {"id": 3, "account_code": "4120.03", "name": "Uang Mandarin", "is_operational": False},
 ]
 
 INVESTMENT_CATS = [
@@ -150,6 +157,103 @@ class TestListIncomeCategories:
         response = await mock_client.get("/income-categories")
         codes = [c["account_code"] for c in response.json()]
         assert "4120.03" in codes
+
+    async def test_returns_is_operational_for_each_category(
+        self, mock_client, respx_mock, base_url
+    ):
+        """list_income_categories mengembalikan is_operational pada tiap entri."""
+        respx_mock.get(f"{base_url}/income-categories").mock(
+            return_value=Response(200, json=INCOME_CATS)
+        )
+        response = await mock_client.get("/income-categories")
+        items = response.json()
+        assert len(items) == 3
+        assert all("is_operational" in item for item in items)
+        non_operational = [item for item in items if item["is_operational"] is False]
+        assert [item["account_code"] for item in non_operational] == ["4120.03"]
+
+
+class TestUpdateIncomeCategory:
+    """Menguji tool update_income_category secara in-memory via fastmcp.Client.
+
+    Dipanggil lewat Client (bukan langsung memanggil client.put dengan
+    payload buatan test) supaya logika partial-update di dalam tool
+    (field yang tidak disebut pemanggil tidak ikut terkirim) benar-benar
+    diverifikasi, sesuai Skenario Uji issue.
+    """
+
+    def _mcp(self, mock_client):
+        mcp = FastMCP(name="test")
+        categories.register(mcp, mock_client)
+        return mcp
+
+    async def test_sends_put_with_is_operational_in_payload(
+        self, mock_client, respx_mock, base_url
+    ):
+        """is_operational=False memanggil PUT /income-categories/{id} dengan muatan itu."""
+        updated = {
+            "id": 28,
+            "code": "TEMP.001",
+            "label": "Pendapatan Kantin",
+            "is_operational": False,
+            "sort_order": 0,
+        }
+        route = respx_mock.put(f"{base_url}/income-categories/28").mock(
+            return_value=Response(200, json=updated)
+        )
+
+        mcp = self._mcp(mock_client)
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "update_income_category", {"category_id": 28, "is_operational": False}
+            )
+
+        assert route.called
+        body = json.loads(route.calls.last.request.content)
+        assert body == {"is_operational": False}
+        assert result.data["is_operational"] is False
+
+    async def test_omitted_fields_not_sent_in_payload(self, mock_client, respx_mock, base_url):
+        """Memanggil hanya dengan label tidak menyertakan is_operational di muatan."""
+        updated = {
+            "id": 3,
+            "code": "4120.03",
+            "label": "Uang Mandarin Baru",
+            "is_operational": True,
+            "sort_order": 0,
+        }
+        route = respx_mock.put(f"{base_url}/income-categories/3").mock(
+            return_value=Response(200, json=updated)
+        )
+
+        mcp = self._mcp(mock_client)
+        async with Client(mcp) as client:
+            await client.call_tool(
+                "update_income_category", {"category_id": 3, "label": "Uang Mandarin Baru"}
+            )
+
+        body = json.loads(route.calls.last.request.content)
+        assert body == {"label": "Uang Mandarin Baru"}
+        assert "is_operational" not in body
+        assert "sort_order" not in body
+
+    async def test_returns_error_dict_when_category_not_found(
+        self, mock_client, respx_mock, base_url
+    ):
+        """404 dari backend menghasilkan dict {error, context}, bukan exception."""
+        respx_mock.put(f"{base_url}/income-categories/9999").mock(
+            return_value=Response(404, json={"detail": "Income category not found"})
+        )
+
+        mcp = self._mcp(mock_client)
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "update_income_category", {"category_id": 9999, "is_operational": False}
+            )
+
+        assert "error" in result.data
+        assert "context" in result.data
+        assert result.data["context"]["category_id"] == 9999
 
 
 class TestListInvestmentCategories:

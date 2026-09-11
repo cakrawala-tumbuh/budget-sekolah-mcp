@@ -11,11 +11,12 @@ Semua tool MCP menggunakan satu instance client yang diinisialisasi
 di server.py dan diteruskan via dependency injection sederhana.
 
 Fungsi utama:
-  BudgetApiClient.get     — HTTP GET
-  BudgetApiClient.post    — HTTP POST
-  BudgetApiClient.put     — HTTP PUT
-  BudgetApiClient.delete  — HTTP DELETE
-  BudgetApiClient.startup — login ke backend (dipanggil saat server start)
+  BudgetApiClient.get                    — HTTP GET
+  BudgetApiClient.post                   — HTTP POST
+  BudgetApiClient.put                    — HTTP PUT
+  BudgetApiClient.delete                 — HTTP DELETE
+  BudgetApiClient.update_income_category — PUT /income-categories/{id}
+  BudgetApiClient.startup                — login ke backend (dipanggil saat server start)
 """
 
 import logging
@@ -166,6 +167,23 @@ class BudgetApiClient:
             httpx.Response dari server.
         """
         return await self._request("DELETE", path)
+
+    async def update_income_category(self, category_id: int, payload: dict) -> httpx.Response:
+        """Kirim PUT ke endpoint update kategori pendapatan.
+
+        Endpoint ``PUT /income-categories/{category_id}`` hanya di-hard-code
+        di sini, sesuai konvensi repo — berkas tool tidak boleh menulis path
+        endpoint secara langsung.
+
+        Args:
+            category_id: ID kategori pendapatan yang diubah.
+            payload: Field yang akan diperbarui (partial update). Field yang
+                tidak ingin diubah tidak boleh disertakan oleh pemanggil.
+
+        Returns:
+            httpx.Response dari server.
+        """
+        return await self.put(f"/income-categories/{category_id}", json=payload)
 
     async def aclose(self) -> None:
         """Tutup koneksi HTTP client.
