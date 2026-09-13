@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "budget-sekolah-mcp"
-version = "0.1.0"
+version = "1.6.2"
 description = "MCP server untuk berinteraksi dengan budget-backend-ypii"
 requires-python = ">=3.11"
 dependencies = [
