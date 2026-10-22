@@ -122,6 +122,7 @@ from .tools import (  # noqa: E402
     categories,
     contributions,
     depreciation,
+    financial_investments,
     grade_configs,
     income_entries,
     investments,
@@ -136,6 +137,7 @@ budget_entries.register(mcp, _client)
 categories.register(mcp, _client)
 contributions.register(mcp, _client)
 depreciation.register(mcp, _client)
+financial_investments.register(mcp, _client)
 grade_configs.register(mcp, _client)
 income_entries.register(mcp, _client)
 investments.register(mcp, _client)

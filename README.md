@@ -40,6 +40,7 @@ Server ini memungkinkan AI agent (Claude Desktop, VS Code Copilot, dsb.) mengaks
 | `bulk_create_income_entries` | Tambah banyak entri pendapatan sekaligus |
 | `list_investments` | Daftar investasi aset baru |
 | `create_investment` | Tambah investasi aset baru |
+| `list_financial_investments` | Daftar investasi keuangan (deposito, saham, dsb.) CABANG/PUSAT, baca-saja |
 | `list_depreciation` | Daftar aset lama yang disusutkan |
 | `create_depreciation` | Tambah aset lama |
 | `get_contribution_rates` | Baca tarif kontribusi |

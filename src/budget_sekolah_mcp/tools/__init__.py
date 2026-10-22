@@ -11,6 +11,7 @@ Modul yang tersedia:
   budget_entries — Entri biaya operasional dan non-operasional
   income_entries — Entri pendapatan manual
   investments    — Investasi aset tetap baru
+  financial_investments — Investasi keuangan CABANG/PUSAT (read-only)
   depreciation   — Aset tetap lama yang masih disusutkan
   contributions  — Tarif kontribusi dan alokasi ke CABANG/PUSAT
   parent_expense_allocations — Alokasi biaya induk (CABANG/PUSAT) ke unit anak

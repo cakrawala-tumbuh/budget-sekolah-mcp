@@ -8,6 +8,9 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- Tool baca-saja `list_financial_investments(org_id)` untuk membaca daftar investasi
+  keuangan (deposito, saham, reksa dana, dsb.) lewat
+  `GET /organizations/{org_id}/financial-investments`.
 - Tool `update_income_category` untuk mengubah `label`, `is_operational`, dan
   `sort_order` satu kategori pendapatan (partial update, admin) lewat
   `PUT /income-categories/{category_id}`.
