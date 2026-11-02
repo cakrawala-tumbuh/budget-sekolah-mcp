@@ -7,6 +7,12 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Diubah
+- Workflow rilis `release.yml` dimigrasi ke caller `ghcr.yml@v2` dan kini menerbitkan image
+  multi-arch `linux/amd64` + `linux/arm64` agar jalan di node SBC ARM (rujukan:
+  Andhit-s-To-Do-List/shared-infra-support#23). Tag `latest` kini ikut terbit; tag `{{major}}`
+  (mis. `:1`) tidak lagi dihasilkan. GitHub Release dipisah menjadi job `github-release`.
+
 ## [1.7.0] - 2026-10-22
 
 ### Ditambahkan

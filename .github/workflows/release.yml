@@ -5,45 +5,30 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  packages: write
+
 jobs:
-  release-and-push:
-    name: Build Image, Push ke GHCR, Buat GitHub Release
+  docker-image:
+    name: Build Image Multi-arch, Push ke GHCR
+    uses: andhit-r/release-docker-image-ghcr/.github/workflows/ghcr.yml@v2
+    with:
+      dockerfile: Dockerfile
+      target: production
+      platforms: linux/amd64,linux/arm64
+    secrets: inherit
+
+  github-release:
+    name: Buat GitHub Release
+    needs: docker-image
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
-
     steps:
       - name: Checkout kode
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Login ke GitHub Container Registry (GHCR)
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Ekstrak metadata Docker (tag, label)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-
-      - name: Build dan push Docker image ke GHCR
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: production
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Buat GitHub Release otomatis
         uses: softprops/action-gh-release@v2
