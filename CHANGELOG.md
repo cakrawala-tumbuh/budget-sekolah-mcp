@@ -7,6 +7,8 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-11-02
+
 ### Diperbaiki
 - Workflow rilis `release.yml` kini memberi izin `contents: read` di tingkat atas agar workflow
   reusable `ghcr.yml@v2` bisa start; rilis v1.8.0 gagal `startup_failure` sehingga image dan
@@ -80,7 +82,8 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 - Ganti GitHub OAuth dengan Authentik sebagai identity provider.
 - Perbaiki URL authorize dan token ke format Authentik 2024+.
 
-[Unreleased]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/andhitia-r/budget-sekolah-mcp/compare/v1.6.1...v1.6.2
