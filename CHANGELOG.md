@@ -7,6 +7,11 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Diperbaiki
+- Workflow rilis `release.yml` kini memberi izin `contents: read` di tingkat atas agar workflow
+  reusable `ghcr.yml@v2` bisa start; rilis v1.8.0 gagal `startup_failure` sehingga image dan
+  GitHub Release v1.8.0 tidak pernah terbit.
+
 ## [1.8.0] - 2026-11-02
 
 ### Diubah
