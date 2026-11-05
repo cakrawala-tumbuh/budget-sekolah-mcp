@@ -7,6 +7,12 @@ dan proyek ini menggunakan [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-11-05
+
+### Diubah
+- Rilis ulang atas keputusan pemilik untuk memastikan alur rilis `ghcr.yml@v2` dengan izin
+  `contents: read` tetap lulus. Tidak ada perubahan fungsional dibanding v1.8.1.
+
 ## [1.8.1] - 2026-11-02
 
 ### Diperbaiki
